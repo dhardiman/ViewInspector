@@ -106,7 +106,7 @@ internal extension String {
     
     fileprivate func hasPrefix(regex: String, wholeMatch: Bool) -> Bool {
         let range = NSRange(location: 0, length: utf16.count)
-        guard let ex = try? NSRegularExpression(pattern: regex),
+        guard let ex = RegexCache.expression(regex),
               let match = ex.firstMatch(in: self, range: range)
         else { return false }
         if wholeMatch {
@@ -363,5 +363,23 @@ extension BinaryEquatable {
 internal extension MemoryLayout {
     static func actualSize() -> String {
         fatalError("New size of \(String(describing: type(of: T.self))) is \(Self.size)")
+    }
+}
+
+/// Each pattern compiled once. `hasPrefix(regex:)` runs for every node a search visits, and compiling an
+/// `NSRegularExpression` costs far more than matching one.
+private enum RegexCache {
+    nonisolated(unsafe) private static var compiled: [String: NSRegularExpression] = [:]
+    private static let lock = NSLock()
+
+    static func expression(_ pattern: String) -> NSRegularExpression? {
+        lock.lock()
+        defer { lock.unlock() }
+        if let expression = compiled[pattern] {
+            return expression
+        }
+        guard let expression = try? NSRegularExpression(pattern: pattern) else { return nil }
+        compiled[pattern] = expression
+        return expression
     }
 }

@@ -240,7 +240,7 @@ internal extension Inspector {
     }
 
     static func isSystemType(type: Any.Type) -> Bool {
-        let reflectedName = String(reflecting: type)
+        let reflectedName = reflectedName(of: type)
         let extensionContext = "(extension in "
         if reflectedName.hasPrefix(extensionContext), let end = reflectedName.range(of: "):") {
             // A type declared in an extension belongs to the module of the extension,
@@ -259,10 +259,27 @@ internal extension Inspector {
         ].containsPrefixRegex(matching: name, wholeMatch: false)
     }
 
+    /// `String(reflecting: type)`, without its protocol casts.
+    ///
+    /// `String(reflecting:)` and `String(describing:)` first cast the value to `CustomDebugStringConvertible`,
+    /// `CustomStringConvertible` and `TextOutputStreamable`. A metatype conforms to none of them, so every cast
+    /// fails, and for a type the runtime has not checked before each failure scans every protocol conformance
+    /// record of every loaded image. Both then print a metatype with `_typeName`, so calling it directly gives
+    /// the same string. The scans are what make the first inspection of a view slow: almost every view
+    /// SwiftUI builds is a new generic type, and the library names the type of every node it visits.
+    static func reflectedName(of type: Any.Type) -> String {
+        return _typeName(type, qualified: true)
+    }
+
+    /// `String(describing: type)`, without its protocol casts: see `reflectedName(of:)`.
+    static func describedName(of type: Any.Type) -> String {
+        return _typeName(type, qualified: false)
+    }
+
     static func typeName(type: Any.Type,
                          namespaced: Bool = false,
                          generics: GenericParameters = .keep) -> String {
-        let typeName = namespaced ? sanitizeNamespace(ofTypeName: String(reflecting: type)) : String(describing: type)
+        let typeName = namespaced ? sanitizeNamespace(ofTypeName: reflectedName(of: type)) : describedName(of: type)
         switch generics {
         case .keep:
             return typeName
