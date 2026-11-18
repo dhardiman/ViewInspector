@@ -340,9 +340,9 @@ internal extension ViewHosting {
             // The controller is accepted only when it owns the subview of the host view, so that a
             // responder chain that was redirected cannot hand back another controller. As with `uiView()`,
             // the first match wins when several representables of this type are hosted (issue #166).
-            let adaptor = "RepresentableAdaptor<" + String(reflecting: viewController) + ">"
+            let adaptor = "RepresentableAdaptor<" + Inspector.reflectedName(of: viewController) + ">"
             guard let vc = window.firstDescendant({ view -> V.UIViewControllerType? in
-                guard String(reflecting: type(of: view)).contains(adaptor) else { return nil }
+                guard Inspector.reflectedName(of: type(of: view)).contains(adaptor) else { return nil }
                 return view.subviews.lazy.compactMap { subview in
                     (subview.next as? V.UIViewControllerType).flatMap { $0.viewIfLoaded === subview ? $0 : nil }
                 }.first

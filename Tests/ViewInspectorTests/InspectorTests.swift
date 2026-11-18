@@ -73,6 +73,27 @@ final class InspectorTests: XCTestCase {
         XCTAssertEqual(name3, "ModifiedContent")
     }
     
+    func testNamesOfATypeAreThoseStringReflectingAndDescribingGive() {
+        let types: [Any.Type] = [
+            Int.self,
+            Struct1.self,
+            Struct3<Int>.self,
+            Struct3<(String) -> Void>.self,
+            (Struct3<Int>, Struct3<String>).self,
+            ModifiedContent<EmptyView, _EnvironmentKeyWritingModifier<(String) -> Void>>.self,
+            Inspector.ExtensionNestedView.self,
+            Inspector.ExtensionNestedGenericView<Text>.self,
+            Text.ExtensionOfSystemTypeView.self,
+            NSObject.self,
+            Optional<Text>.self,
+            [String: [Int]].self,
+        ]
+        for type in types {
+            XCTAssertEqual(Inspector.reflectedName(of: type), String(reflecting: type))
+            XCTAssertEqual(Inspector.describedName(of: type), String(describing: type))
+        }
+    }
+
     func testTypeNameOfViewDeclaredInCrossModuleExtension() {
         let namespaced = "ViewInspector.Inspector.ExtensionNestedView"
         XCTAssertTrue(
